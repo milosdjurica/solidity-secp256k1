@@ -2,6 +2,8 @@
 pragma solidity ^0.8.13;
 
 library Secp256k1 {
+    error Secp256k1__InvalidPoint(uint256 x, uint256 y);
+
     // Curve parameters for secp256k1
     uint256 constant a = 0;
     uint256 constant b = 7;
@@ -22,8 +24,13 @@ library Secp256k1 {
         return leftHandSide == rightHandSide;
     }
 
+    function negatePoint(uint256 x, uint256 y) internal pure returns (uint256, uint256) {
+        if (!isOnCurve(x, y)) revert Secp256k1__InvalidPoint(x, y);
+        if (isInfinity(x, y)) return (x, y);
+        return (x, p - y);
+    }
+
     function addPoint() internal {}
-    function negatePoint() internal {}
     function orderOfPoint() internal {}
     function scalarMultiply() internal {}
 }
