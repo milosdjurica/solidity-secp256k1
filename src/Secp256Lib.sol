@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 // ! y^2 = x^3 + ax + b = x^3 + 7
 library Secp256k1 {
     error Secp256k1__InvalidPoint(uint256 x, uint256 y);
+    error Secp256k1__InvalidCoordinate(uint256 coordinate);
 
     // Curve parameters for secp256k1
     uint256 constant a = 0;
@@ -24,6 +25,9 @@ library Secp256k1 {
     // y^2 ≡ x^3 + 7 (mod p)
     // Check if the point is on curve
     function isOnCurve(uint256 x, uint256 y) internal pure returns (bool) {
+        if (x >= p) revert Secp256k1__InvalidCoordinate(x);
+        if (y >= p) revert Secp256k1__InvalidCoordinate(y);
+
         uint256 leftHandSide = mulmod(y, y, p); // y^2 mod p
         uint256 xCubed = mulmod(x, mulmod(x, x, p), p); // x^3 mod p
         uint256 rightHandSide = addmod(xCubed, 7, p); // (x*3 + 8) mod p
