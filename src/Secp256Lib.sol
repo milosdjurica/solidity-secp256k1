@@ -60,6 +60,13 @@ library Secp256k1 {
         if (x1 == x2 && (y1 + y2) % p == 0) return (0, 0); // point at infinity
 
         uint256 m = calculateSlope(x1, y1, x2, y2);
+
+        // ! x3 = m^2 - x1 - x2 mod p = x^2 - (x1 + x2) mod p
+        uint256 x3 = addmod(mulmod(m, m, p), p - addmod(x1, x2, p), p);
+        // ! y3 = m * (x1 - x3) - y1 mod p
+        uint256 y3 = addmod(mulmod(m, addmod(x1, p - x3, p), p), p - y1, p);
+
+        return (x3, y3);
     }
 
     function calculateSlope(uint256 x1, uint256 y1, uint256 x2, uint256 y2) internal pure returns (uint256) {
@@ -87,7 +94,14 @@ library Secp256k1 {
     }
 
     function modPow(uint256 base, uint256 exp) internal pure returns (uint256) {
-        // TODO
+        uint256 result = 1;
+        while (exp > 0) {
+            if (exp % 2 == 1) result = mulmod(result, base, p);
+
+            base = mulmod(base, base, p);
+            exp /= 2;
+        }
+        return result;
     }
 
     function orderOfPoint() internal {}
