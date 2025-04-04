@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+// ! y^2 = x^3 + ax + b = x^3 + 7
 library Secp256k1 {
     error Secp256k1__InvalidPoint(uint256 x, uint256 y);
 
@@ -55,6 +56,37 @@ library Secp256k1 {
     {
         if (isInfinity(x1, y1)) return (x2, y2);
         if (isInfinity(x2, y2)) return (x1, y1);
+
+        if (x1 == x2 && (y1 + y2) % p == 0) return (0, 0); // point at infinity
+
+        uint256 m = calculateSlope(x1, y1, x2, y2);
+    }
+
+    function calculateSlope(uint256 x1, uint256 y1, uint256 x2, uint256 y2) internal pure returns (uint256) {
+        uint256 numerator;
+        uint256 denominator;
+
+        // Point Doubling
+        if (x1 == x2 && y1 == y2) {
+            // (3 * x1^2 + a) mod p, but since `a` is 0 , we can ignore it
+            numerator = mulmod(3, mulmod(x1, x1, p), p);
+
+            // (2 * y1) mod p
+            denominator = mulmod(2, y1, p);
+        } else {
+            // Point addition
+            numerator = addmod(y2, p - y1, p);
+            denominator = addmod(x2, p - x1, p);
+        }
+
+        return mulmod(numerator, modInverse(denominator), p);
+    }
+
+    function modInverse(uint256 toInvert) internal pure returns (uint256) {
+        return modPow(toInvert, p - 2);
+    }
+
+    function modPow(uint256 base, uint256 exp) internal pure returns (uint256) {
         // TODO
     }
 
