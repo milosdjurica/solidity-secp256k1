@@ -34,6 +34,9 @@ library Secp256k1 {
         return leftHandSide == rightHandSide;
     }
 
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    // ! NEGATE POINT
+    // ! -----------------------------------------------------------------------------------------------------------------------
     function negatePoint(uint256 x, uint256 y) internal pure onlyValidPoint(x, y) returns (uint256, uint256) {
         return negatePointUnchecked(x, y);
     }
@@ -43,17 +46,20 @@ library Secp256k1 {
         return (x, p - y);
     }
 
-    function addPoint(uint256 x1, uint256 y1, uint256 x2, uint256 y2)
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    // ! ADD POINTS
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    function addPoints(uint256 x1, uint256 y1, uint256 x2, uint256 y2)
         internal
         pure
         onlyValidPoint(x1, y1)
         onlyValidPoint(x2, y2)
         returns (uint256, uint256)
     {
-        return addPointUnchecked(x1, y1, x2, y2);
+        return addPointsUnchecked(x1, y1, x2, y2);
     }
 
-    function addPointUnchecked(uint256 x1, uint256 y1, uint256 x2, uint256 y2)
+    function addPointsUnchecked(uint256 x1, uint256 y1, uint256 x2, uint256 y2)
         internal
         pure
         returns (uint256, uint256)
@@ -61,11 +67,17 @@ library Secp256k1 {
         if (isInfinity(x1, y1)) return (x2, y2);
         if (isInfinity(x2, y2)) return (x1, y1);
 
-        if (x1 == x2 && (y1 + y2) % p == 0) return (0, 0); // point at infinity
+        if (x1 == x2) {
+            if (y1 == y2) return doublePointUnchecked(x1, y1); // Doubling a point
+            if ((y1 + y2) % p == 0) return (0, 0); // Point at infinity
+        }
 
-        uint256 m = calculateSlope(x1, y1, x2, y2);
+        // ! Calculate slope
+        uint256 numerator = addmod(y2, p - y1, p);
+        uint256 denominator = addmod(x2, p - x1, p);
+        uint256 m = mulmod(numerator, modInverse(denominator), p);
 
-        // ! x3 = m^2 - x1 - x2 mod p = x^2 - (x1 + x2) mod p
+        // ! x3 = m^2 - x1 - x2 mod p = m^2 - (x1 + x2) mod p
         uint256 x3 = addmod(mulmod(m, m, p), p - addmod(x1, x2, p), p);
         // ! y3 = m * (x1 - x3) - y1 mod p
         uint256 y3 = addmod(mulmod(m, addmod(x1, p - x3, p), p), p - y1, p);
@@ -73,24 +85,27 @@ library Secp256k1 {
         return (x3, y3);
     }
 
-    function calculateSlope(uint256 x1, uint256 y1, uint256 x2, uint256 y2) internal pure returns (uint256) {
-        uint256 numerator;
-        uint256 denominator;
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    // ! POINT DOUBLING
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    function doublePoint(uint256 x, uint256 y) internal pure onlyValidPoint(x, y) returns (uint256, uint256) {
+        if (isInfinity(x, y)) return (0, 0);
+        return doublePointUnchecked(x, y);
+    }
 
-        // Point Doubling
-        if (x1 == x2 && y1 == y2) {
-            // (3 * x1^2 + a) mod p, but since `a` is 0 , we can ignore it
-            numerator = mulmod(3, mulmod(x1, x1, p), p);
+    function doublePointUnchecked(uint256 x1, uint256 y1) internal pure returns (uint256, uint256) {
+        // (3 * x1^2 + a) mod p, but since `a` is 0 , we can ignore it
+        uint256 numerator = mulmod(3, mulmod(x1, x1, p), p);
+        // (2 * y1) mod p
+        uint256 denominator = mulmod(2, y1, p);
+        uint256 m = mulmod(numerator, modInverse(denominator), p);
 
-            // (2 * y1) mod p
-            denominator = mulmod(2, y1, p);
-        } else {
-            // Point addition
-            numerator = addmod(y2, p - y1, p);
-            denominator = addmod(x2, p - x1, p);
-        }
+        // ! x3 = m^2 - x1 - x2 mod p = m^2 - 2x1 mod p
+        uint256 x3 = addmod(mulmod(m, m, p), p - addmod(x1, x1, p), p);
+        // ! y3 = m * (x1 - x3) - y1 mod p
+        uint256 y3 = addmod(mulmod(m, addmod(x1, p - x3, p), p), p - y1, p);
 
-        return mulmod(numerator, modInverse(denominator), p);
+        return (x3, y3);
     }
 
     function modInverse(uint256 toInvert) internal pure returns (uint256) {
