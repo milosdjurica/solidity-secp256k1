@@ -22,6 +22,50 @@ contract Secp256k1Test is Test {
     }
 
     // ! -----------------------------------------------------------------------------------------------------------------------
+    // ! isInfinity() TESTS
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    function test_isInfinity_True() public pure {
+        uint256 x = 0;
+        uint256 y = 0;
+        assertEq(Secp256k1.isInfinity(x, y), true);
+    }
+
+    function testFuzz_isInfinity_False(uint256 x, uint256 y) public pure {
+        vm.assume(x != 0 || y != 0);
+        assertEq(Secp256k1.isInfinity(x, y), false);
+    }
+
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    // ! isOnCurve() TESTS
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    function test_isOnCurve_InfinityPoint_False() public pure {
+        uint256 x = 0;
+        uint256 y = 0;
+        assertFalse(Secp256k1.isOnCurve(x, y));
+    }
+
+    function test_isOnCurve_True() public pure {
+        assertTrue(Secp256k1.isOnCurve(Gx, Gy));
+        assertTrue(Secp256k1.isOnCurve(G2x, G2y));
+    }
+
+    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function test_isOnCurve_RevertIf_InvalidCoordinate_X(uint256 x) public {
+        x = bound(x, Secp256k1.p, UINT256_MAX);
+        vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidCoordinate.selector, x));
+        Secp256k1.isOnCurve(x, Gy);
+    }
+
+    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function test_isOnCurve_RevertIf_InvalidCoordinate_Y(uint256 y) public {
+        y = bound(y, Secp256k1.p, UINT256_MAX);
+        vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidCoordinate.selector, y));
+        Secp256k1.isOnCurve(Gx, y);
+    }
+
+    // ! -----------------------------------------------------------------------------------------------------------------------
     // ! addPoints() TESTS FOR GAS
     // ! -----------------------------------------------------------------------------------------------------------------------
     function test_addPointsGasCosts() public view {
@@ -45,20 +89,5 @@ contract Secp256k1Test is Test {
         // TODO -> add test for -> (0,0) + (0,0)
         // TODO -> add test for -> 2G + G
         // TODO -> add gas tests for unchecked
-    }
-
-    // ! -----------------------------------------------------------------------------------------------------------------------
-    // ! isInfinity() TESTS
-    // ! -----------------------------------------------------------------------------------------------------------------------
-
-    function test_isInfinity() public pure {
-        uint256 x = 0;
-        uint256 y = 0;
-        assertEq(Secp256k1.isInfinity(x, y), true);
-    }
-
-    function testFuzz_isInfinity(uint256 x, uint256 y) public pure {
-        vm.assume(x != 0 || y != 0);
-        assertEq(Secp256k1.isInfinity(x, y), false);
     }
 }
