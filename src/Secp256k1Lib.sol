@@ -13,7 +13,8 @@ library Secp256k1 {
     uint256 constant p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
 
     modifier onlyValidPoint(uint256 x, uint256 y) {
-        if (!isOnCurve(x, y)) revert Secp256k1__InvalidPoint(x, y);
+        // Point at infinity (0,0) is considered valid, even though it is not on the curve
+        if (!isOnCurve(x, y) && !isInfinity(x, y)) revert Secp256k1__InvalidPoint(x, y);
         _;
     }
 
@@ -23,14 +24,15 @@ library Secp256k1 {
     }
 
     // y^2 ≡ x^3 + 7 (mod p)
-    // Check if the point is on curve
+    // Check if the point is on curve. Point at infinity (0,0) is not considered on curve. This checks only if math equation is correct
     function isOnCurve(uint256 x, uint256 y) internal pure returns (bool) {
         if (x >= p) revert Secp256k1__InvalidCoordinate(x);
         if (y >= p) revert Secp256k1__InvalidCoordinate(y);
 
         uint256 leftHandSide = mulmod(y, y, p); // y^2 mod p
+        // TODO -> optimize this into 1 variable?
         uint256 xCubed = mulmod(x, mulmod(x, x, p), p); // x^3 mod p
-        uint256 rightHandSide = addmod(xCubed, 7, p); // (x*3 + 8) mod p
+        uint256 rightHandSide = addmod(xCubed, 7, p); // (x^3 + 7) mod p
         return leftHandSide == rightHandSide;
     }
 
