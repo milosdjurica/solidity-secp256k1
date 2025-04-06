@@ -72,6 +72,9 @@ library Secp256k1 {
         if (x1 == x2) {
             if (y1 == y2) return doublePointUnchecked(x1, y1); // Doubling a point
             if ((y1 + y2) % p == 0) return (0, 0); // Point at infinity
+            // ! This checks are unreachable if the points are valid. Added here just as a safety measure, as they don't use gas, since they should never be reached.
+            if (!isOnCurve(x1, y1)) revert Secp256k1__InvalidPoint(x1, y1);
+            if (!isOnCurve(x2, y2)) revert Secp256k1__InvalidPoint(x2, y2);
         }
 
         // ! Calculate slope
