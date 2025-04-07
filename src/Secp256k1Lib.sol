@@ -12,6 +12,9 @@ library Secp256k1 {
     // p = 2^256 - 2^32 - 977
     uint256 constant p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
 
+    /// @dev The order of the secp256k1 curve.
+    uint256 constant SECP256K1_ORDER = 115792089237316195423570985008687907852837564279074904382605163141518161494337;
+
     modifier onlyValidPoint(uint256 x, uint256 y) {
         // Point at infinity (0,0) is considered valid, even though it is not on the curve
         if (!isOnCurve(x, y) && !isInfinity(x, y)) revert Secp256k1__InvalidPoint(x, y);
@@ -31,6 +34,7 @@ library Secp256k1 {
 
         uint256 leftHandSide = mulmod(y, y, p); // y^2 mod p
         // TODO -> optimize this into 1 variable?
+        // TODO -> uint256 rightHandSide = addmod(mulmod(x, mulmod(x, x, p), p), 7, p); // (x^3 + 7) mod p
         uint256 xCubed = mulmod(x, mulmod(x, x, p), p); // x^3 mod p
         uint256 rightHandSide = addmod(xCubed, 7, p); // (x^3 + 7) mod p
         return leftHandSide == rightHandSide;
@@ -110,6 +114,11 @@ library Secp256k1 {
         return (x3, y3);
     }
 
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    // ! SCALAR MULTIPLICATION
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    function scalarMultiplication() internal {}
+
     function modInverse(uint256 toInvert) internal pure returns (uint256) {
         return modPow(toInvert, p - 2);
     }
@@ -124,7 +133,4 @@ library Secp256k1 {
         }
         return result;
     }
-
-    function orderOfPoint() internal {}
-    function scalarMultiply() internal {}
 }

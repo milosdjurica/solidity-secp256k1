@@ -51,7 +51,7 @@ contract Secp256k1Test is Test {
 
     // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
     /// forge-config: default.allow_internal_expect_revert = true
-    function test_isOnCurve_RevertIf_InvalidCoordinate_X(uint256 x) public {
+    function testFuzz_isOnCurve_RevertIf_InvalidCoordinate_X(uint256 x) public {
         x = bound(x, Secp256k1.p, UINT256_MAX);
         vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidCoordinate.selector, x));
         Secp256k1.isOnCurve(x, Gy);
@@ -59,7 +59,7 @@ contract Secp256k1Test is Test {
 
     // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
     /// forge-config: default.allow_internal_expect_revert = true
-    function test_isOnCurve_RevertIf_InvalidCoordinate_Y(uint256 y) public {
+    function testFuzz_isOnCurve_RevertIf_InvalidCoordinate_Y(uint256 y) public {
         y = bound(y, Secp256k1.p, UINT256_MAX);
         vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidCoordinate.selector, y));
         Secp256k1.isOnCurve(Gx, y);
