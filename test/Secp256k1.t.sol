@@ -66,6 +66,44 @@ contract Secp256k1Test is Test {
     }
 
     // ! -----------------------------------------------------------------------------------------------------------------------
+    // ! negatePoint() TESTS
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    function test_negatePoint_Infinity() public pure {
+        (uint256 x, uint256 y) = Secp256k1.negatePoint(0, 0);
+        assertEq(x, 0);
+        assertEq(y, 0);
+    }
+
+    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function testFuzz_negatePoint_RevertIf_InvalidCoordinate_X(uint256 x) public {
+        x = bound(x, Secp256k1.p, UINT256_MAX);
+        uint256 y = 1;
+        vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidCoordinate.selector, x));
+        Secp256k1.negatePoint(x, y);
+    }
+
+    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function testFuzz_negatePoint_RevertIf_InvalidCoordinate_Y(uint256 y) public {
+        uint256 x = 1;
+        y = bound(y, Secp256k1.p, UINT256_MAX);
+        vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidCoordinate.selector, y));
+        Secp256k1.negatePoint(x, y);
+    }
+
+    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function testFuzz_negatePoint_RevertIf_InvalidPoint(uint256 x, uint256 y) public {
+        x = bound(x, 0, Secp256k1.p - 1);
+        y = bound(y, 0, Secp256k1.p - 1);
+        vm.assume(!Secp256k1.isOnCurve(x, y));
+        vm.assume(x != 0 || y != 0);
+        vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidPoint.selector, x, y));
+        Secp256k1.negatePoint(x, y);
+    }
+
+    // ! -----------------------------------------------------------------------------------------------------------------------
     // ! addPoints() TESTS FOR GAS
     // ! -----------------------------------------------------------------------------------------------------------------------
     function test_addPointsGasCosts() public view {
