@@ -11,6 +11,8 @@ contract Secp256k1Test is Test {
     uint256 constant Gx = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798;
     uint256 constant Gy = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8;
 
+    uint256 constant GyNeg = 0xb7c52588d95c3b9aa25b0403f1eef75702e84bb7597aabe663b82f6f04ef2777;
+
     // 2G (Result of G + G)
     uint256 constant G2x = 0xC6047F9441ED7D6D3045406E95C07CD85C778E4B8CEF3CA7ABAC09B95C709EE5;
     uint256 constant G2y = 0x1AE168FEA63DC339A3C58419466CEAEEF7F632653266D0E1236431A950CFE52A;
@@ -19,6 +21,7 @@ contract Secp256k1Test is Test {
         // Verify test points are valid before testing
         require(Secp256k1.isOnCurve(Gx, Gy), "G not on curve");
         require(Secp256k1.isOnCurve(G2x, G2y), "2G not on curve");
+        require(Secp256k1.isOnCurve(Gx, GyNeg), "G negated not on curve");
     }
 
     // ! -----------------------------------------------------------------------------------------------------------------------
@@ -47,6 +50,7 @@ contract Secp256k1Test is Test {
     function test_isOnCurve_True() public pure {
         assertTrue(Secp256k1.isOnCurve(Gx, Gy));
         assertTrue(Secp256k1.isOnCurve(G2x, G2y));
+        assertTrue(Secp256k1.isOnCurve(Gx, GyNeg));
     }
 
     // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
@@ -72,6 +76,15 @@ contract Secp256k1Test is Test {
         (uint256 x, uint256 y) = Secp256k1.negatePoint(0, 0);
         assertEq(x, 0);
         assertEq(y, 0);
+    }
+
+    function test_negatePoint_G() public pure {
+        (uint256 x, uint256 yNeg) = Secp256k1.negatePoint(Gx, Gy);
+        assertEq(x, Gx);
+        assertEq(yNeg, GyNeg);
+        (uint256 x_unchanged, uint256 y) = Secp256k1.negatePoint(Gx, GyNeg);
+        assertEq(x_unchanged, Gx);
+        assertEq(y, Gy);
     }
 
     // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
