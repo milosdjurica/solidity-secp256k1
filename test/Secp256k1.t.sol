@@ -147,8 +147,54 @@ contract Secp256k1Test is Test {
     // ! -----------------------------------------------------------------------------------------------------------------------
     // ! addPoints() TESTS
     // ! -----------------------------------------------------------------------------------------------------------------------
+    // TODO -> invalid point P1, P2
+    // TODO -> invalid coordinates
+    // TODO -> valid sum with diff points
+    // TODO -> using infinity point for P1 and P2
+    // TODO -> Double point check for valid points
+    // TODO -> G + GNeg = (0,0)
+    function test_addPoints_WithInfinity() public pure {
+        (uint256 x, uint256 y) = Secp256k1.addPoints(0, 0, Gx, Gy);
+        assertEq(x, Gx);
+        assertEq(y, Gy);
 
-    function test_addPoints() public {}
+        (uint256 x1, uint256 y1) = Secp256k1.addPoints(Gx, Gy, 0, 0);
+        assertEq(x1, Gx);
+        assertEq(y1, Gy);
+    }
+
+    function test_addPoints_WorkingExamples() public pure {
+        (uint256 x, uint256 y) = Secp256k1.addPoints(0, 0, G2x, G2y);
+        assertEq(x, G2x);
+        assertEq(y, G2y);
+
+        (uint256 x1, uint256 y1) = Secp256k1.addPoints(G2x, G2y, 0, 0);
+        assertEq(x1, G2x);
+        assertEq(y1, G2y);
+
+        (uint256 x2, uint256 y2) = Secp256k1.addPoints(Gx, GyNeg, 0, 0);
+        assertEq(x2, Gx);
+        assertEq(y2, GyNeg);
+
+        (uint256 x3, uint256 y3) = Secp256k1.addPoints(0, 0, Gx, GyNeg);
+        assertEq(x3, Gx);
+        assertEq(y3, GyNeg);
+
+        Secp256k1.addPoints(Gx, Gy, G2x, G2y);
+        Secp256k1.addPoints(G2x, G2y, Gx, GyNeg);
+    }
+
+    function test_addPoints_Double() public pure {
+        (uint256 x, uint256 y) = Secp256k1.addPoints(Gx, Gy, Gx, Gy);
+        assertEq(x, G2x);
+        assertEq(y, G2y);
+    }
+
+    function test_addPoints_AddNegated() public pure {
+        (uint256 x, uint256 y) = Secp256k1.addPoints(Gx, Gy, Gx, GyNeg);
+        assertEq(x, 0);
+        assertEq(y, 0);
+    }
 
     function test_addPointsGasCosts() public view {
         // Test 1: Point doubling (G + G)
