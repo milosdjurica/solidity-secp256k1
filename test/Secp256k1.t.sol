@@ -53,7 +53,7 @@ contract Secp256k1Test is Test {
         assertTrue(Secp256k1.isOnCurve(Gx, GyNeg));
     }
 
-    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
     /// forge-config: default.allow_internal_expect_revert = true
     function testFuzz_isOnCurve_RevertIf_InvalidCoordinate_X(uint256 x) public {
         x = bound(x, Secp256k1.p, UINT256_MAX);
@@ -61,7 +61,7 @@ contract Secp256k1Test is Test {
         Secp256k1.isOnCurve(x, Gy);
     }
 
-    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
     /// forge-config: default.allow_internal_expect_revert = true
     function testFuzz_isOnCurve_RevertIf_InvalidCoordinate_Y(uint256 y) public {
         y = bound(y, Secp256k1.p, UINT256_MAX);
@@ -87,7 +87,7 @@ contract Secp256k1Test is Test {
         assertEq(y, Gy);
     }
 
-    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
     /// forge-config: default.allow_internal_expect_revert = true
     function testFuzz_negatePoint_RevertIf_InvalidCoordinate_X(uint256 x) public {
         x = bound(x, Secp256k1.p, UINT256_MAX);
@@ -96,7 +96,7 @@ contract Secp256k1Test is Test {
         Secp256k1.negatePoint(x, y);
     }
 
-    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
     /// forge-config: default.allow_internal_expect_revert = true
     function testFuzz_negatePoint_RevertIf_InvalidCoordinate_Y(uint256 y) public {
         uint256 x = 1;
@@ -105,7 +105,7 @@ contract Secp256k1Test is Test {
         Secp256k1.negatePoint(x, y);
     }
 
-    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
     /// forge-config: default.allow_internal_expect_revert = true
     function testFuzz_negatePoint_RevertIf_InvalidPoint(uint256 x, uint256 y) public {
         x = bound(x, 0, Secp256k1.p - 1);
@@ -133,7 +133,7 @@ contract Secp256k1Test is Test {
         assertEq(yNeg, Secp256k1.p - y);
     }
 
-    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
     /// forge-config: default.allow_internal_expect_revert = true
     function testFuzz_negatePointUnchecked_OutOfBounds(uint256 x, uint256 y) public {
         x = bound(x, Secp256k1.p + 1, UINT256_MAX);
@@ -147,50 +147,91 @@ contract Secp256k1Test is Test {
     // ! -----------------------------------------------------------------------------------------------------------------------
     // ! addPoints() TESTS
     // ! -----------------------------------------------------------------------------------------------------------------------
-    function test_addPoints_WithInfinity() public pure {
+    function test_addPoints_WithInfinity() public view {
+        uint256 gasBefore;
+        uint256 gasUsed;
+
+        gasBefore = gasleft();
         (uint256 x, uint256 y) = Secp256k1.addPoints(0, 0, Gx, Gy);
+        gasUsed = gasBefore - gasleft();
+        console.log("Gas used for Infinity + G:", gasUsed);
         assertEq(x, Gx);
         assertEq(y, Gy);
 
+        gasBefore = gasleft();
         (uint256 x1, uint256 y1) = Secp256k1.addPoints(Gx, Gy, 0, 0);
+        gasUsed = gasBefore - gasleft();
+        console.log("Gas used for point G + Infinity:", gasUsed);
         assertEq(x1, Gx);
         assertEq(y1, Gy);
     }
 
-    function test_addPoints_WorkingExamples() public pure {
-        (uint256 x, uint256 y) = Secp256k1.addPoints(0, 0, G2x, G2y);
-        assertEq(x, G2x);
-        assertEq(y, G2y);
-
-        (uint256 x1, uint256 y1) = Secp256k1.addPoints(G2x, G2y, 0, 0);
-        assertEq(x1, G2x);
-        assertEq(y1, G2y);
-
-        (uint256 x2, uint256 y2) = Secp256k1.addPoints(Gx, GyNeg, 0, 0);
-        assertEq(x2, Gx);
-        assertEq(y2, GyNeg);
-
-        (uint256 x3, uint256 y3) = Secp256k1.addPoints(0, 0, Gx, GyNeg);
-        assertEq(x3, Gx);
-        assertEq(y3, GyNeg);
-
-        Secp256k1.addPoints(Gx, Gy, G2x, G2y);
-        Secp256k1.addPoints(G2x, G2y, Gx, GyNeg);
-    }
-
-    function test_addPoints_Double() public pure {
+    function test_addPoints_Double() public view {
+        uint256 gasBefore;
+        uint256 gasUsed;
+        gasBefore = gasleft();
         (uint256 x, uint256 y) = Secp256k1.addPoints(Gx, Gy, Gx, Gy);
+        gasUsed = gasBefore - gasleft();
+        console.log("Gas used for G + G:", gasUsed);
         assertEq(x, G2x);
         assertEq(y, G2y);
     }
 
-    function test_addPoints_AddNegated() public pure {
+    function test_addPoints_AddNegated() public view {
+        uint256 gasBefore;
+        uint256 gasUsed;
+        gasBefore = gasleft();
         (uint256 x, uint256 y) = Secp256k1.addPoints(Gx, Gy, Gx, GyNeg);
+        gasUsed = gasBefore - gasleft();
+        console.log("Gas used for G + GNeg:", gasUsed);
         assertEq(x, 0);
         assertEq(y, 0);
     }
 
-    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    function test_addPoints_WorkingExamples() public view {
+        uint256 gasBefore;
+        uint256 gasUsed;
+
+        gasBefore = gasleft();
+        (uint256 x, uint256 y) = Secp256k1.addPoints(0, 0, G2x, G2y);
+        gasUsed = gasBefore - gasleft();
+        console.log("Gas used for Infinity + G2:", gasUsed);
+        assertEq(x, G2x);
+        assertEq(y, G2y);
+
+        gasBefore = gasleft();
+        (uint256 x1, uint256 y1) = Secp256k1.addPoints(G2x, G2y, 0, 0);
+        gasUsed = gasBefore - gasleft();
+        console.log("Gas used for G2 + Infinity:", gasUsed);
+        assertEq(x1, G2x);
+        assertEq(y1, G2y);
+
+        gasBefore = gasleft();
+        (uint256 x2, uint256 y2) = Secp256k1.addPoints(Gx, GyNeg, 0, 0);
+        gasUsed = gasBefore - gasleft();
+        console.log("Gas used for GNeg + Infinity:", gasUsed);
+        assertEq(x2, Gx);
+        assertEq(y2, GyNeg);
+
+        gasBefore = gasleft();
+        (uint256 x3, uint256 y3) = Secp256k1.addPoints(0, 0, Gx, GyNeg);
+        gasUsed = gasBefore - gasleft();
+        console.log("Gas used for Infinity + GNeg:", gasUsed);
+        assertEq(x3, Gx);
+        assertEq(y3, GyNeg);
+
+        gasBefore = gasleft();
+        Secp256k1.addPoints(Gx, Gy, G2x, G2y);
+        gasUsed = gasBefore - gasleft();
+        console.log("Gas used for G + G2:", gasUsed);
+
+        gasBefore = gasleft();
+        Secp256k1.addPoints(G2x, G2y, Gx, GyNeg);
+        gasUsed = gasBefore - gasleft();
+        console.log("Gas used for G2 + GNeg:", gasUsed);
+    }
+
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
     /// forge-config: default.allow_internal_expect_revert = true
     function testFuzz_addPoints_RevertIf_InvalidCoordinate_X(uint256 x) public {
         x = bound(x, Secp256k1.p, UINT256_MAX);
@@ -199,7 +240,7 @@ contract Secp256k1Test is Test {
         Secp256k1.addPoints(x, y, Gx, Gy);
     }
 
-    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
     /// forge-config: default.allow_internal_expect_revert = true
     function testFuzz_addPoints_RevertIf_InvalidCoordinate_Y(uint256 y) public {
         uint256 x = 1;
@@ -208,7 +249,7 @@ contract Secp256k1Test is Test {
         Secp256k1.addPoints(x, y, Gx, Gy);
     }
 
-    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
     /// forge-config: default.allow_internal_expect_revert = true
     function testFuzz_addPoints_RevertIf_InvalidPoint(uint256 x, uint256 y) public {
         x = bound(x, 0, Secp256k1.p - 1);
@@ -219,26 +260,5 @@ contract Secp256k1Test is Test {
         Secp256k1.addPoints(x, y, Gx, Gy);
     }
 
-    function test_addPointsGasCosts() public view {
-        // Test 1: Point doubling (G + G)
-        uint256 gasBefore = gasleft();
-        (uint256 x1, uint256 y1) = Secp256k1.addPoints(Gx, Gy, Gx, Gy);
-        uint256 gasUsed = gasBefore - gasleft();
-
-        console.log("Gas used for point doubling (G + G):", gasUsed);
-        require(x1 == G2x && y1 == G2y, "Invalid doubling result");
-
-        // Test 2: Point addition (G + 2G)
-        gasBefore = gasleft();
-        (uint256 x2, uint256 y2) = Secp256k1.addPoints(Gx, Gy, G2x, G2y);
-        gasUsed = gasBefore - gasleft();
-
-        console.log("Gas used for point addition (G + 2G):", gasUsed);
-        require(Secp256k1.isOnCurve(x2, y2), "Invalid addition result");
-        // TODO -> add test for -> (0,0) + G
-        // TODO -> add test for -> G + (0,0)
-        // TODO -> add test for -> (0,0) + (0,0)
-        // TODO -> add test for -> 2G + G
-        // TODO -> add gas tests for unchecked
-    }
+    // TODO -> add gas tests for unchecked
 }
