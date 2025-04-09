@@ -135,7 +135,7 @@ contract Secp256k1Test is Test {
 
     // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
     /// forge-config: default.allow_internal_expect_revert = true
-    function testFuzz_negatePointUnchecked_OutOfBounds(uint256 x, uint256 y) public {
+    function testFuzz_negatePointUnchecked_RevertIf_OutOfBounds(uint256 x, uint256 y) public {
         x = bound(x, Secp256k1.p + 1, UINT256_MAX);
         y = bound(y, Secp256k1.p + 1, UINT256_MAX);
         console.log(x, y);
@@ -259,6 +259,30 @@ contract Secp256k1Test is Test {
         vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidPoint.selector, x, y));
         Secp256k1.addPoints(x, y, Gx, Gy);
     }
-
     // TODO -> add gas tests for unchecked
+    // TODO -> add tests for doubling point
+
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    // ! modInverse() TESTS
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    function testFuzz_modInverse(uint256 number) public pure {
+        number = bound(number, 1, Secp256k1.p - 1);
+        uint256 inverse = Secp256k1.modInverse(number);
+        assertEq(mulmod(number, inverse, Secp256k1.p), 1);
+    }
+
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    // ! modPow() TESTS
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    function testFuzz_ModPow(uint256 base, uint256 exponent) public pure {
+        // To avoid high gas cost in the fuzz test, restricted the exponent to a reasonable range.
+        vm.assume(exponent < 1_000_000);
+
+        uint256 result = Secp256k1.modPow(base, exponent);
+        uint256 expected = 1;
+        for (uint256 i = 0; i < exponent; i++) {
+            expected = mulmod(expected, base, Secp256k1.p);
+        }
+        assertEq(result, expected);
+    }
 }
