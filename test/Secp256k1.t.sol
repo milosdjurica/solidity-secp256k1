@@ -352,7 +352,7 @@ contract Secp256k1Test is Test {
     function testFuzz_scalarMultiplication(uint256 scalar) public pure {
         // To avoid high gas cost in the fuzz test, restricted the scalar to a reasonable range.
         vm.assume(scalar < 1_000_000);
-        scalar = bound(scalar, 0, 1_000_000);
+        // Just checking if this fails at one point
         Secp256k1.scalarMultiplication(Gx, Gy, scalar);
     }
 
@@ -360,6 +360,35 @@ contract Secp256k1Test is Test {
         (uint256 x, uint256 y) = Secp256k1.scalarMultiplication(0, 0, scalar);
         assertEq(x, 0);
         assertEq(y, 0);
+    }
+
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function testFuzz_scalarMultiplication_RevertIf_InvalidCoordinate_X(uint256 x, uint256 scalar) public {
+        x = bound(x, Secp256k1.p, UINT256_MAX);
+        uint256 y = 1;
+        vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidCoordinate.selector, x));
+        Secp256k1.scalarMultiplication(x, y, scalar);
+    }
+
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function testFuzz_scalarMultiplication_RevertIf_InvalidCoordinate_Y(uint256 y, uint256 scalar) public {
+        uint256 x = 1;
+        y = bound(y, Secp256k1.p, UINT256_MAX);
+        vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidCoordinate.selector, y));
+        Secp256k1.scalarMultiplication(x, y, scalar);
+    }
+
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function testFuzz_scalarMultiplication_RevertIf_InvalidPoint(uint256 x, uint256 y, uint256 scalar) public {
+        x = bound(x, 0, Secp256k1.p - 1);
+        y = bound(y, 0, Secp256k1.p - 1);
+        vm.assume(!Secp256k1.isOnCurve(x, y));
+        vm.assume(x != 0 || y != 0);
+        vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidPoint.selector, x, y));
+        Secp256k1.scalarMultiplication(x, y, scalar);
     }
 
     // ! -----------------------------------------------------------------------------------------------------------------------
