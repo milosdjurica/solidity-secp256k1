@@ -147,12 +147,6 @@ contract Secp256k1Test is Test {
     // ! -----------------------------------------------------------------------------------------------------------------------
     // ! addPoints() TESTS
     // ! -----------------------------------------------------------------------------------------------------------------------
-    // TODO -> invalid point P1, P2
-    // TODO -> invalid coordinates
-    // TODO -> valid sum with diff points
-    // TODO -> using infinity point for P1 and P2
-    // TODO -> Double point check for valid points
-    // TODO -> G + GNeg = (0,0)
     function test_addPoints_WithInfinity() public pure {
         (uint256 x, uint256 y) = Secp256k1.addPoints(0, 0, Gx, Gy);
         assertEq(x, Gx);
@@ -194,6 +188,35 @@ contract Secp256k1Test is Test {
         (uint256 x, uint256 y) = Secp256k1.addPoints(Gx, Gy, Gx, GyNeg);
         assertEq(x, 0);
         assertEq(y, 0);
+    }
+
+    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function testFuzz_addPoints_RevertIf_InvalidCoordinate_X(uint256 x) public {
+        x = bound(x, Secp256k1.p, UINT256_MAX);
+        uint256 y = 1;
+        vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidCoordinate.selector, x));
+        Secp256k1.addPoints(x, y, Gx, Gy);
+    }
+
+    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function testFuzz_addPoints_RevertIf_InvalidCoordinate_Y(uint256 y) public {
+        uint256 x = 1;
+        y = bound(y, Secp256k1.p, UINT256_MAX);
+        vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidCoordinate.selector, y));
+        Secp256k1.addPoints(x, y, Gx, Gy);
+    }
+
+    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function testFuzz_addPoints_RevertIf_InvalidPoint(uint256 x, uint256 y) public {
+        x = bound(x, 0, Secp256k1.p - 1);
+        y = bound(y, 0, Secp256k1.p - 1);
+        vm.assume(!Secp256k1.isOnCurve(x, y));
+        vm.assume(x != 0 || y != 0);
+        vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidPoint.selector, x, y));
+        Secp256k1.addPoints(x, y, Gx, Gy);
     }
 
     function test_addPointsGasCosts() public view {
