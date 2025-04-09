@@ -260,7 +260,54 @@ contract Secp256k1Test is Test {
         Secp256k1.addPoints(x, y, Gx, Gy);
     }
     // TODO -> add gas tests for unchecked
-    // TODO -> add tests for doubling point
+
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    // ! doublePoint() TESTS
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    function test_doublePoint() public pure {
+        (uint256 x, uint256 y) = Secp256k1.doublePoint(Gx, Gy);
+        assertEq(x, G2x);
+        assertEq(y, G2y);
+
+        // Just checking that this wont fail
+        (uint256 G3x, uint256 G3y) = Secp256k1.doublePoint(G2x, G2y);
+        Secp256k1.doublePoint(G3x, G3y);
+    }
+
+    function test_doublePoint_Infinity() public pure {
+        (uint256 x, uint256 y) = Secp256k1.doublePoint(0, 0);
+        assertEq(x, 0);
+        assertEq(y, 0);
+    }
+
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function testFuzz_doublePoint_RevertIf_InvalidCoordinate_X(uint256 x) public {
+        x = bound(x, Secp256k1.p, UINT256_MAX);
+        uint256 y = 1;
+        vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidCoordinate.selector, x));
+        Secp256k1.doublePoint(x, y);
+    }
+
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function testFuzz_doublePoint_RevertIf_InvalidCoordinate_Y(uint256 y) public {
+        uint256 x = 1;
+        y = bound(y, Secp256k1.p, UINT256_MAX);
+        vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidCoordinate.selector, y));
+        Secp256k1.doublePoint(x, y);
+    }
+
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function testFuzz_doublePoint_RevertIf_InvalidPoint(uint256 x, uint256 y) public {
+        x = bound(x, 0, Secp256k1.p - 1);
+        y = bound(y, 0, Secp256k1.p - 1);
+        vm.assume(!Secp256k1.isOnCurve(x, y));
+        vm.assume(x != 0 || y != 0);
+        vm.expectRevert(abi.encodeWithSelector(Secp256k1.Secp256k1__InvalidPoint.selector, x, y));
+        Secp256k1.doublePoint(x, y);
+    }
 
     // ! -----------------------------------------------------------------------------------------------------------------------
     // ! modInverse() TESTS
