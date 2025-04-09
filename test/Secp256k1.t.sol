@@ -310,6 +310,36 @@ contract Secp256k1Test is Test {
     }
 
     // ! -----------------------------------------------------------------------------------------------------------------------
+    // ! doublePointUnchecked() TESTS
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    function doublePointUnchecked() public pure {
+        (uint256 x, uint256 y) = Secp256k1.doublePointUnchecked(Gx, Gy);
+        assertEq(x, G2x);
+        assertEq(y, G2y);
+
+        // Just checking that this wont fail
+        (uint256 G3x, uint256 G3y) = Secp256k1.doublePointUnchecked(G2x, G2y);
+        Secp256k1.doublePointUnchecked(G3x, G3y);
+    }
+
+    function test_doublePointUnchecked_Infinity() public pure {
+        (uint256 x, uint256 y) = Secp256k1.doublePointUnchecked(0, 0);
+        assertEq(x, 0);
+        assertEq(y, 0);
+    }
+
+    // ! Expecting revert with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function testFuzz_doublePointUnchecked_RevertIf_OutOfBounds(uint256 x, uint256 y) public {
+        x = bound(x, Secp256k1.p + 1, UINT256_MAX);
+        y = bound(y, Secp256k1.p + 1, UINT256_MAX);
+        console.log(x, y);
+        // underflow or overflow
+        vm.expectRevert(0x11);
+        Secp256k1.doublePointUnchecked(x, y);
+    }
+
+    // ! -----------------------------------------------------------------------------------------------------------------------
     // ! modInverse() TESTS
     // ! -----------------------------------------------------------------------------------------------------------------------
     function testFuzz_modInverse(uint256 number) public pure {
