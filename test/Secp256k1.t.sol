@@ -117,8 +117,39 @@ contract Secp256k1Test is Test {
     }
 
     // ! -----------------------------------------------------------------------------------------------------------------------
-    // ! addPoints() TESTS FOR GAS
+    // ! negatePointUnchecked() TESTS
     // ! -----------------------------------------------------------------------------------------------------------------------
+    function test_negatePointUnchecked_Infinity() public pure {
+        (uint256 x, uint256 yNeg) = Secp256k1.negatePointUnchecked(0, 0);
+        assertEq(x, 0);
+        assertEq(yNeg, 0);
+    }
+
+    function testFuzz_negatePointUnchecked_Passes(uint256 x, uint256 y) public pure {
+        x = bound(x, 1, Secp256k1.p - 1);
+        y = bound(y, 1, Secp256k1.p - 1);
+        (uint256 xNeg, uint256 yNeg) = Secp256k1.negatePointUnchecked(x, y);
+        assertEq(x, xNeg);
+        assertEq(yNeg, Secp256k1.p - y);
+    }
+
+    // ! Line below is for reverting with internal function calls -> https://book.getfoundry.sh/cheatcodes/expect-revert?highlight=expectRevert#error
+    /// forge-config: default.allow_internal_expect_revert = true
+    function testFuzz_negatePointUnchecked_OutOfBounds(uint256 x, uint256 y) public {
+        x = bound(x, Secp256k1.p + 1, UINT256_MAX);
+        y = bound(y, Secp256k1.p + 1, UINT256_MAX);
+        console.log(x, y);
+        // underflow or overflow
+        vm.expectRevert(0x11);
+        Secp256k1.negatePointUnchecked(x, y);
+    }
+
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    // ! addPoints() TESTS
+    // ! -----------------------------------------------------------------------------------------------------------------------
+
+    function test_addPoints() public {}
+
     function test_addPointsGasCosts() public view {
         // Test 1: Point doubling (G + G)
         uint256 gasBefore = gasleft();
