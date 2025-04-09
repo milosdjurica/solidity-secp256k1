@@ -340,6 +340,29 @@ contract Secp256k1Test is Test {
     }
 
     // ! -----------------------------------------------------------------------------------------------------------------------
+    // ! scalarMultiplication() TESTS
+    // ! -----------------------------------------------------------------------------------------------------------------------
+    function test_scalarMultiplication() public pure {
+        uint256 scalar = 2;
+        (uint256 x, uint256 y) = Secp256k1.scalarMultiplication(Gx, Gy, scalar);
+        assertEq(x, G2x);
+        assertEq(y, G2y);
+    }
+
+    function testFuzz_scalarMultiplication(uint256 scalar) public pure {
+        // To avoid high gas cost in the fuzz test, restricted the scalar to a reasonable range.
+        vm.assume(scalar < 1_000_000);
+        scalar = bound(scalar, 0, 1_000_000);
+        Secp256k1.scalarMultiplication(Gx, Gy, scalar);
+    }
+
+    function testFuzz_scalarMultiplication_Infinity(uint256 scalar) public pure {
+        (uint256 x, uint256 y) = Secp256k1.scalarMultiplication(0, 0, scalar);
+        assertEq(x, 0);
+        assertEq(y, 0);
+    }
+
+    // ! -----------------------------------------------------------------------------------------------------------------------
     // ! modInverse() TESTS
     // ! -----------------------------------------------------------------------------------------------------------------------
     function testFuzz_modInverse(uint256 number) public pure {
@@ -351,7 +374,7 @@ contract Secp256k1Test is Test {
     // ! -----------------------------------------------------------------------------------------------------------------------
     // ! modPow() TESTS
     // ! -----------------------------------------------------------------------------------------------------------------------
-    function testFuzz_ModPow(uint256 base, uint256 exponent) public pure {
+    function testFuzz_modPow(uint256 base, uint256 exponent) public pure {
         // To avoid high gas cost in the fuzz test, restricted the exponent to a reasonable range.
         vm.assume(exponent < 1_000_000);
 

@@ -117,7 +117,26 @@ library Secp256k1 {
     // ! -----------------------------------------------------------------------------------------------------------------------
     // ! SCALAR MULTIPLICATION
     // ! -----------------------------------------------------------------------------------------------------------------------
-    function scalarMultiplication() internal {}
+    function scalarMultiplication(uint256 x, uint256 y, uint256 scalar)
+        internal
+        pure
+        onlyValidPoint(x, y)
+        returns (uint256, uint256)
+    {
+        if (isInfinity(x, y)) return (0, 0);
+
+        (uint256 resX, uint256 resY) = (0, 0);
+        (uint256 currX, uint256 currY) = (x, y);
+
+        while (scalar > 0) {
+            if (scalar & 1 == 1) {
+                (resX, resY) = addPointsUnchecked(resX, resY, currX, currY);
+            }
+            (currX, currY) = doublePointUnchecked(currX, currY);
+            scalar >>= 1;
+        }
+        return (resX, resY);
+    }
 
     function modInverse(uint256 toInvert) internal pure returns (uint256) {
         return modPow(toInvert, p - 2);
