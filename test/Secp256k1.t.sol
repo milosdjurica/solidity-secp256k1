@@ -122,7 +122,7 @@ contract Secp256k1Test is Test {
     function test_negatePointUnchecked_Infinity() public pure {
         (uint256 x, uint256 yNeg) = Secp256k1.negatePointUnchecked(0, 0);
         assertEq(x, 0);
-        assertEq(yNeg, 0);
+        assertEq(yNeg, Secp256k1.p);
     }
 
     function testFuzz_negatePointUnchecked_Passes(uint256 x, uint256 y) public pure {
